@@ -86,6 +86,8 @@ class UserController {
 	}
 
 	public async updateUser(req: AuthRequest, res: Response): Promise<void> {
+
+		console.log('userId: ', req.userId)
 		
 		type UpdateUserData = {
 			username?: string;

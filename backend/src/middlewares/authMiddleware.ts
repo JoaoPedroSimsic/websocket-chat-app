@@ -12,6 +12,11 @@ const authMiddleware = async (
 	res: Response,
 	next: NextFunction,
 ): Promise<void> => {
+
+	if (req.skipAuth) {
+		next();
+	}
+
 	const authorization = req.headers.authorization;
 
 	if (!authorization) {
@@ -30,24 +35,28 @@ const authMiddleware = async (
 			throw new Error('JWT_SECRET not set');
 		}
 		const decoded = jwt.verify(token, jwtSecret) as {
-			id: number;
+			userId: number;
 			email: string;
 		};
-		const { id, email } = decoded;
+		const { userId, email } = decoded;
 
-		const user = await prisma.user.findUnique({ where: { id, email } });
+		const user = await prisma.user.findUnique({ where: { id: userId, email } });
 
 		if (!user || user.email !== email) {
 			res.status(401).json({ error: 'Invalid User' });
 			return;
 		}
 
-		req.userId = id;
+		req.userId = userId;
 		req.userEmail = email;
 		next();
 	} catch (err) {
-		handleError(err, res, 'error');
-		return;
+		if (err instanceof jwt.TokenExpiredError) {
+			res.status(401).json({ error: 'Token Expired' });
+		} else if (err instanceof jwt.JsonWebTokenError) {
+			res.status(401).json({ error: 'Invalid Token' });
+		}
+		handleError(err, res, 'Authentication Error');
 	}
 };
 
