@@ -1,8 +1,8 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../types/AuthRequest';
-import jwt from 'jsonwebtoken';
 import prisma from '../config/prismaClient';
 
+import verifyToken from '../utils/verifyToken';
 import handleError from '../utils/handleError';
 
 const jwtSecret = process.env.JWT_SECRET;
@@ -12,50 +12,33 @@ const authMiddleware = async (
 	res: Response,
 	next: NextFunction,
 ): Promise<void> => {
+	const authHeader = req.headers.authorization;
 
-	if (req.skipAuth) {
-		next();
-	}
-
-	const authorization = req.headers.authorization;
-
-	if (!authorization) {
+	if (!authHeader) {
 		res.status(401).json({ error: 'Login Required' });
 		return;
 	}
 
-	const [, token] = authorization.split(' ');
+	const token = authHeader.split(' ')[1];
 
-	if (!token) {
-		res.status(401).json({ error: 'Invalid token format' });
+	const userId = await verifyToken(token, jwtSecret);
+
+	if (userId === null) {
+		res.status(401).json({ error: 'Invalid token' });
+		return;
 	}
 
 	try {
-		if (!jwtSecret) {
-			throw new Error('JWT_SECRET not set');
-		}
-		const decoded = jwt.verify(token, jwtSecret) as {
-			userId: number;
-			email: string;
-		};
-		const { userId, email } = decoded;
-
-		const user = await prisma.user.findUnique({ where: { id: userId, email } });
-
-		if (!user || user.email !== email) {
-			res.status(401).json({ error: 'Invalid User' });
+		const user = await prisma.user.findUnique({ where: { id: userId } });
+		if (!user) {
+			res.status(401).json({ error: 'Invalid user' });
 			return;
 		}
 
 		req.userId = userId;
-		req.userEmail = email;
+		req.userEmail = user.email;
 		next();
 	} catch (err) {
-		if (err instanceof jwt.TokenExpiredError) {
-			res.status(401).json({ error: 'Token Expired' });
-		} else if (err instanceof jwt.JsonWebTokenError) {
-			res.status(401).json({ error: 'Invalid Token' });
-		}
 		handleError(err, res, 'Authentication Error');
 	}
 };

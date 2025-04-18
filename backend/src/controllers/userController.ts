@@ -5,7 +5,6 @@ import prisma from '../config/prismaClient';
 import bcrypt from 'bcryptjs';
 import validator from 'validator';
 import handleError from '../utils/handleError';
-import isValidPassword from '../utils/isValidPassword';
 
 class UserController {
 	public async getAllUsers(_req: Request, res: Response): Promise<void> {
@@ -13,7 +12,7 @@ class UserController {
 			const users = await prisma.user.findMany();
 			res.status(200).json(users);
 		} catch (err) {
-			handleError(err, res, 'Error fetching users');
+			return handleError(err, res, 'Error fetching users');
 		}
 	}
 
@@ -39,7 +38,7 @@ class UserController {
 
 			res.status(200).json(user);
 		} catch (err) {
-			handleError(err, res, 'Error fetching user');
+			return handleError(err, res, 'Error fetching user');
 		}
 	}
 
@@ -80,15 +79,14 @@ class UserController {
 			res
 				.status(201)
 				.json({ message: 'User created successfully', user: newUser });
+			return;
 		} catch (err: unknown) {
-			handleError(err, res, 'Error creating user');
+			return handleError(err, res, 'Error creating user');
 		}
 	}
 
 	public async updateUser(req: AuthRequest, res: Response): Promise<void> {
 
-		console.log('userId: ', req.userId)
-		
 		type UpdateUserData = {
 			username?: string;
 			email?: string;
@@ -128,8 +126,9 @@ class UserController {
 			res
 				.status(200)
 				.json({ message: 'User updated successfully', updatedUser });
+			return;
 		} catch (err) {
-			handleError(err, res, 'Error updating user');
+			return handleError(err, res, 'Error updating user');
 		}
 	}
 
@@ -137,7 +136,6 @@ class UserController {
 		try {
 			const { userId } = req;
 			const { id } = req.params;
-			const { password } = req.body;
 
 			if (!userId) {
 				res.status(401).json({ error: 'Unauthorized' });
@@ -158,18 +156,14 @@ class UserController {
 				return;
 			}
 
-			if (!(await isValidPassword(password, user.password))) {
-				res.status(401).json({ message: 'Invalid password' });
-				return;
-			}
-
 			await prisma.user.delete({
 				where: { id: Number(id) },
 			});
 
 			res.status(200).json({ message: 'User deleted successfully' });
+			return;
 		} catch (err) {
-			handleError(err, res, 'Error deleting user');
+			return handleError(err, res, 'Error deleting user');
 		}
 	}
 }
