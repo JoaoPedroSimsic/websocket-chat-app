@@ -5,17 +5,12 @@ import prisma from '../config/prismaClient';
 
 import handleError from '../utils/handleError';
 
-const jwtSecret = process.env.JWT_SECRET;
-
 const authMiddleware = async (
 	req: AuthRequest,
 	res: Response,
 	next: NextFunction,
 ): Promise<void> => {
-
-	if (req.skipAuth) {
-		next();
-	}
+	const jwtSecret = process.env.JWT_SECRET;
 
 	const authorization = req.headers.authorization;
 
@@ -24,7 +19,7 @@ const authMiddleware = async (
 		return;
 	}
 
-	const [, token] = authorization.split(' ');
+	const token = authorization.split(' ')[1];
 
 	if (!token) {
 		res.status(401).json({ error: 'Invalid token format' });
@@ -38,6 +33,7 @@ const authMiddleware = async (
 			userId: number;
 			email: string;
 		};
+
 		const { userId, email } = decoded;
 
 		const user = await prisma.user.findUnique({ where: { id: userId, email } });
