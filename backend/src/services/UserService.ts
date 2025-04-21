@@ -1,7 +1,6 @@
 import prisma from '../config/prismaClient';
 import { User } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import validator from 'validator';
 
 class UserService {
 	public async getAllUsers(): Promise<User[]> {
