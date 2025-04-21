@@ -1,0 +1,162 @@
+<!doctype html>
+<html>
+
+<head>
+	<title>WebSocket Chat Client</title>
+	<style>
+		#chatbox {
+			border: 1px solid #ccc;
+			height: 300px;
+			overflow-y: scroll;
+			padding: 10px;
+			margin-bottom: 10px;
+		}
+
+		.message {
+			margin-bottom: 5px;
+		}
+
+		.status {
+			font-style: italic;
+			color: #666;
+		}
+	</style>
+</head>
+
+<body>
+	<h1>WebSocket Chat Client</h1>
+
+	<div>
+		<label for="roomId">Room ID:</label>
+		<input type="number" id="roomId" value="1" /><br /><br />
+
+		<label for="messageInput">Message:</label>
+		<input type="text" id="messageInput" />
+		<button id="sendMessageButton">Send Message</button><br /><br />
+
+		<button id="joinRoomButton">Join Room</button>
+	</div>
+
+	<div id="chatbox">
+		<div class="status">Connecting...</div>
+	</div>
+
+	<!-- <script src="/socket.io/socket.io.js"></script> -->
+	<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+	<script>
+		// IMPORTANT: Replace with a valid JWT token obtained from your backend's /token endpoint
+		const YOUR_AUTH_TOKEN =
+			'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoiZW1haWwiLCJpYXQiOjE3NDUyNzM4NzgsImV4cCI6MTc0NTg3ODY3OH0.KtxTYZvfiU62eg9QDYkfFWCBd-fEGqe6GAf4WWmE0yw';
+
+		// Connect to the Socket.IO server
+		const socket = io('ws://localhost:3000', {
+			auth: {
+				token: YOUR_AUTH_TOKEN,
+			},
+		});
+
+		const chatbox = document.getElementById('chatbox');
+		const roomIdInput = document.getElementById('roomId');
+		const messageInput = document.getElementById('messageInput');
+		const sendMessageButton = document.getElementById('sendMessageButton');
+		const joinRoomButton = document.getElementById('joinRoomButton');
+
+		function appendMessage(msg, isStatus = false) {
+			const messageElement = document.createElement('div');
+			messageElement.classList.add(isStatus ? 'status' : 'message');
+			messageElement.textContent = msg;
+			chatbox.appendChild(messageElement);
+			chatbox.scrollTop = chatbox.scrollHeight; // Auto-scroll to bottom
+		}
+
+		// Socket.IO Event Listeners
+
+		socket.on('connect', () => {
+			appendMessage('Connected to WebSocket server!', true);
+			appendMessage(`Socket ID: ${socket.id}`, true);
+		});
+
+		socket.on('disconnect', (reason) => {
+			appendMessage(`Disconnected from WebSocket server: ${reason}`, true);
+		});
+
+		socket.on('connect_error', (err) => {
+			appendMessage(`WebSocket connection error: ${err.message}`, true);
+			console.error('WebSocket connection error:', err);
+		});
+
+		socket.onAny((event, ...args) => {
+			console.log(`Received event: ${event}`, args);
+		});
+
+		// Listen for incoming chat messages
+		socket.on('chat:message', (message) => {
+			const messageText = `${message.username}: ${message.content}`;
+			appendMessage(messageText);
+		});
+
+		// Listen for chat history on joining a room (if implemented)
+		socket.on('chat:history', (messages) => {
+			appendMessage('--- Chat History ---', true);
+			messages.forEach((message) => {
+				const messageText = `${message.sender.username}: ${message.content}`;
+				appendMessage(messageText);
+			});
+			appendMessage('--- End History ---', true);
+		});
+
+		// Listen for server-side error events
+		socket.on('error:room:join', (errorMessage) => {
+			appendMessage(`Error joining room: ${errorMessage}`, true);
+			console.error('Error joining room:', errorMessage);
+		});
+
+		socket.on('error:chat:message', (errorMessage) => {
+			appendMessage(`Error sending message: ${errorMessage}`, true);
+			console.error('Error sending message:', errorMessage);
+		});
+
+		// Button Event Handlers
+
+		joinRoomButton.addEventListener('click', () => {
+			const roomId = roomIdInput.value;
+			if (roomId) {
+				appendMessage(`Attempting to join room: ${roomId}`, true);
+				socket.emit('room:join', Number(roomId)); // Emit as number to match server logic
+			} else {
+				alert('Please enter a Room ID');
+			}
+		});
+
+		sendMessageButton.addEventListener('click', () => {
+			const roomId = roomIdInput.value;
+			const content = messageInput.value;
+			if (roomId && content) {
+				// Ensure user info is available on the socket if needed for server-side check
+				if (socket.connected) {
+					socket.emit('chat:message', {
+						roomId: Number(roomId),
+						content: content,
+					}); // Emit as number
+					messageInput.value = ''; // Clear input after sending
+				} else {
+					appendMessage(
+						'Cannot send message: Not connected to server.',
+						true,
+					);
+				}
+			} else {
+				alert('Please enter both Room ID and Message');
+			}
+		});
+
+		// Optional: Send message on Enter key press
+		messageInput.addEventListener('keypress', (event) => {
+			if (event.key === 'Enter') {
+				sendMessageButton.click();
+			}
+		});
+	</script>
+</body>
+
+</html>

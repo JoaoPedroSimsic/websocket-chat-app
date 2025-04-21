@@ -2,7 +2,7 @@ import app from './app';
 import http from 'http';
 import 'dotenv/config';
 import { Server } from 'socket.io';
-import socketAuth from './middlewares/authSocket';
+// import socketAuth from './middlewares/authSocket';
 
 const PORT = process.env.PORT;
 
@@ -16,7 +16,7 @@ const io = new Server(server, {
 	},
 });
 
-io.use(socketAuth);
+// io.use(socketAuth);
 
 server.listen(PORT, () => {
 	console.log(`Server is running on http://localhost:${PORT}`);
