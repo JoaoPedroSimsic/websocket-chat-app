@@ -1,8 +1,6 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../types/AuthRequest';
-import { User } from '@prisma/client';
-import prisma from '../config/prismaClient';
-import bcrypt from 'bcryptjs';
+import UserService from '../services/UserService';
 import validator from 'validator';
 import handleError from '../utils/handleError';
 import isValidPassword from '../utils/isValidPassword';
@@ -10,7 +8,7 @@ import isValidPassword from '../utils/isValidPassword';
 class UserController {
 	public async getAllUsers(_req: Request, res: Response): Promise<void> {
 		try {
-			const users = await prisma.user.findMany();
+			const users = await UserService.getAllUsers();
 			res.status(200).json(users);
 		} catch (err) {
 			handleError(err, res, 'Error fetching users');
@@ -22,18 +20,14 @@ class UserController {
 			const userId = Number(req.params.id);
 
 			if (!userId || isNaN(Number(userId))) {
-				res.status(400).json({ message: 'Invalid user ID' });
+				res.status(400).json({ error: 'Invalid user ID' });
 				return;
 			}
 
-			const user = await prisma.user.findUnique({
-				where: {
-					id: userId,
-				},
-			});
+			const user = await UserService.getUserById(userId);
 
 			if (!user) {
-				res.status(404).json({ message: 'User not found' });
+				res.status(404).json({ error: 'User not found' });
 				return;
 			}
 
@@ -47,35 +41,31 @@ class UserController {
 		try {
 			const { username, email, password } = req.body;
 
-			const existingUser = await prisma.user.findUnique({ where: { email } });
+			const existingUser = await UserService.getUserByEmail(email);
 
 			if (existingUser) {
-				res.status(400).json({ message: 'Email already in use' });
+				res.status(400).json({ error: 'Email already in use' });
 				return;
 			}
 
 			if (!validator.isEmail(email)) {
-				res.status(400).json({ message: 'Invalid email' });
+				res.status(400).json({ error: 'Invalid email' });
 				return;
 			}
 
 			if (!username || !password) {
-				res.status(400).json({ message: 'Username and password are required' });
+				res.status(400).json({ error: 'Username and password are required' });
 				return;
 			}
 
 			if (password.length < 3) {
 				res
 					.status(400)
-					.json({ message: 'Password must be at least 3 characters' });
+					.json({ error: 'Password must be at least 3 characters' });
 				return;
 			}
 
-			const hashedPassword = await bcrypt.hash(password, 10);
-
-			const newUser: User = await prisma.user.create({
-				data: { username, email, password: hashedPassword },
-			});
+			const newUser = await UserService.createUser(username, email, password);
 
 			res
 				.status(201)
@@ -86,14 +76,11 @@ class UserController {
 	}
 
 	public async updateUser(req: AuthRequest, res: Response): Promise<void> {
-
-		console.log('userId: ', req.userId)
-		
 		type UpdateUserData = {
 			username?: string;
 			email?: string;
 			password?: string;
-		}
+		};
 
 		try {
 			const { userId } = req;
@@ -110,20 +97,25 @@ class UserController {
 				return;
 			}
 
-			const data: UpdateUserData = { username, email, password }; 
-
-			if (password) {
-				data.password = await bcrypt.hash(password, 10);
+			if (email && !validator.isEmail(email)) {
+				res.status(403).json({ error: 'Invalid email' });
+				return;
 			}
 
-			const cleanedData = Object.fromEntries(
-				Object.entries(data).filter(([_, value]) => value !== undefined)
-			)
+			if (password && password.length < 3) {
+				res
+					.status(403)
+					.json({ error: 'Password must be at least 3 characters' });
+				return;
+			}
 
-			const updatedUser = await prisma.user.update({
-				where: { id: Number(id) },
-				data: cleanedData,	
-			});
+			const data: UpdateUserData = { username, email, password };
+
+			const cleanedData = Object.fromEntries(
+				Object.entries(data).filter(([_, value]) => value !== undefined),
+			);
+
+			const updatedUser = await UserService.updateUser(Number(id), cleanedData);
 
 			res
 				.status(200)
@@ -149,23 +141,19 @@ class UserController {
 				return;
 			}
 
-			const user = await prisma.user.findUnique({
-				where: { id: Number(id) },
-			});
+			const user = await UserService.getUserById(Number(id));
 
 			if (!user) {
-				res.status(404).json({ message: 'User not found' });
+				res.status(404).json({ error: 'User not found' });
 				return;
 			}
 
 			if (!(await isValidPassword(password, user.password))) {
-				res.status(401).json({ message: 'Invalid password' });
+				res.status(401).json({ error: 'Invalid password' });
 				return;
 			}
 
-			await prisma.user.delete({
-				where: { id: Number(id) },
-			});
+			await UserService.deleteUser(Number(id));
 
 			res.status(200).json({ message: 'User deleted successfully' });
 		} catch (err) {

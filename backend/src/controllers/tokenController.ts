@@ -36,8 +36,6 @@ class TokenController {
 				{ expiresIn: '7d' },
 			);
 
-			console.log('Token Payload', { userId: user.id, email: user.email });
-
 			res.status(200).json({ token, username: user.username, id: user.id });
 		} catch (err) {
 			handleError(err, res, 'Error generating token');
