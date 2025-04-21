@@ -1,6 +1,7 @@
 import { Socket } from 'socket.io';
 import { ExtendedError } from 'socket.io';
 import verifyToken from '../utils/verifyToken';
+import '../types/socket'
 
 type SocketAuthMiddleware = (
 	socket: Socket,
