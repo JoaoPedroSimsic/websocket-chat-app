@@ -6,6 +6,7 @@
 
 generator client {
   provider = "prisma-client-js"
+	output   = "app/generated/prisma/client"
 }
 
 datasource db {
@@ -18,13 +19,9 @@ model User {
 	username		String
 	email				String 		@unique
 	password		String
-	rooms 			Room[] 	@relation("UserRooms")
+	rooms 			Room[]		@relation("UserRooms")
 	messages 		Message[]
 }
-
-// Index the messages by order in the DB:
-// CREATE INDEX message_roomid_timestamp ON "Message" ("roomId", "timestamp" DESC);
-// CREATE INDEX message_roomid_sequence ON "Message" ("roomId", "sequence");
 
 model Message {
 	id					Int				@id @default(autoincrement())		
@@ -34,8 +31,9 @@ model Message {
 	timestamp		DateTime	@default(now())
 	roomId			Int
 	room 				Room   		@relation(fields: [roomId], references: [id])
-	sequence		Int				@default(0)
 	createdAt		DateTime	@default(now())
+
+	@@index([roomId, createdAt(sort: Desc)])
 }
 
 model Room {

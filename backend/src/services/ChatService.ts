@@ -81,7 +81,6 @@ class ChatService {
 			roomId: message.roomId,
 			content: message.content,
 			timestamp: message.timestamp,
-			sequence: message.sequence,
 			createdAt: message.createdAt,
 		});
 	}
