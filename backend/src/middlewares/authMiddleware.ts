@@ -20,6 +20,7 @@ const authMiddleware = async (
 
 	if (!token) {
 		res.status(401).json({ error: 'Invalid token format' });
+		return;
 	}
 
 	try {
@@ -32,10 +33,13 @@ const authMiddleware = async (
 		if (err instanceof Error) {
 			if (err.message === 'Token Expired') {
 				res.status(401).json({ error: 'Token Expired' });
+				return;
 			} else if (err.message === 'Invalid Token') {
 				res.status(401).json({ error: 'Invalid Token' });
+				return;
 			} else if (err.message === 'Invalid User') {
 				res.status(401).json({ error: 'Invalid User' });
+				return;
 			}
 			handleError(err, res, 'Authentication Error');
 		} else {

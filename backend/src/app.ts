@@ -1,6 +1,7 @@
 import express from 'express';
 import userRoutes from './routes/userRoutes';
 import tokenRoutes from './routes/tokenRoutes';
+import roomRoutes from './routes/roomRoutes';
 import path from 'path';
 
 class App {
@@ -20,6 +21,7 @@ class App {
 	private routes(): void {
 		this.app.use('/users', userRoutes);
 		this.app.use('/token', tokenRoutes);
+		this.app.use('/rooms', roomRoutes);
 	}
 
 	private serveFrontend(): void {

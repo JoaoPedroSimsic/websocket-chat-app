@@ -38,7 +38,7 @@ model Message {
 
 model Room {
 	id					Int				@id @default(autoincrement())
-	name				String
+	name				String		@unique
 	messages		Message[]
 	members 		User[]   	@relation("UserRooms")
 }
