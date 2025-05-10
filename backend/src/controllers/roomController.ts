@@ -31,7 +31,7 @@ class RoomController {
 	}
 
 	public async getRoomById(req: AuthRequest, res: Response): Promise<void> {
-		const { id } = req.body;
+		const { id } = req.params;
 		const roomId = Number(id);
 
 		if (isNaN(roomId)) {

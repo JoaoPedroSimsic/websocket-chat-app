@@ -1,5 +1,10 @@
 import prisma from '../config/prismaClient';
-import { Room } from '@prisma/client';
+import { Room, Message } from '@prisma/client';
+
+type RoomWithMembersAndMessages = Room & {
+	members: { username: string }[];
+	messages: (Message & { sender: { username: string } })[];
+};
 
 class RoomService {
 	public async createRoom(name: string): Promise<Room> {
@@ -38,16 +43,28 @@ class RoomService {
 
 	public async getRoomById(
 		roomId: number,
-	): Promise<(Room & { _count: { members: number } }) | null> {
+	): Promise<RoomWithMembersAndMessages | null> {
 		try {
 			const room = await prisma.room.findUnique({
 				where: {
 					id: roomId,
 				},
 				include: {
-					_count: {
+					members: {
 						select: {
-							members: true,
+							username: true, 
+						},
+					},
+					messages: {
+						orderBy: {
+							createdAt: 'asc', 
+						},
+						include: {
+							sender: {
+								select: {
+									username: true, 
+								},
+							},
 						},
 					},
 				},
@@ -65,8 +82,8 @@ class RoomService {
 				where: { id: roomId },
 				data: {
 					members: {
-						connect: { id: userId }
-					}
+						connect: { id: userId },
+					},
 				},
 			});
 			return room;
@@ -76,16 +93,19 @@ class RoomService {
 		}
 	}
 
-	public async removeUserFromRoom(roomId: number, userId: number): Promise<Room> {
+	public async removeUserFromRoom(
+		roomId: number,
+		userId: number,
+	): Promise<Room> {
 		try {
 			const room = prisma.room.update({
 				where: { id: roomId },
 				data: {
 					members: {
-						disconnect: { id: userId }
-					}
-				}
-			})
+						disconnect: { id: userId },
+					},
+				},
+			});
 			return room;
 		} catch (err) {
 			console.log(`Error removing user ${userId} to room ${roomId}: `, err);
