@@ -21,6 +21,18 @@ class RoomService {
 		}
 	}
 
+	public async deleteRoom(roomId: number): Promise<Room> {
+		try {
+			const room = await prisma.room.delete({
+				where: { id: roomId },
+			})
+			return room;
+		} catch (err) {
+			console.log('Error deleting room: ', err);
+			throw new Error('Could not delete room');
+		}
+	}
+
 	public async getAllRooms(): Promise<
 		(Room & { _count: { members: number } })[]
 	> {

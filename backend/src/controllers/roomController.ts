@@ -21,6 +21,23 @@ class RoomController {
 		}
 	}
 
+	public async deleteRoom(req: AuthRequest, res: Response): Promise<void> {
+		const { id } = req.params;
+		const roomId = Number(id);
+
+		if (isNaN(roomId)) {
+			res.status(400).json({ error: 'Missing or invalid ID' });
+			return;
+		}
+
+		try {
+			const room = await RoomService.deleteRoom(roomId);
+			res.status(200).json({ message: 'Room deleted', room });
+		} catch (err) {
+			handleError(err, res, 'Failed to delete room');
+		}
+	}
+
 	public async getAllRooms(req: AuthRequest, res: Response): Promise<void> {
 		try {
 			const rooms = await RoomService.getAllRooms();

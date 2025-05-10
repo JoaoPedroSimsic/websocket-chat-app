@@ -46,7 +46,7 @@ export const getRoomById = async (roomId: number) => {
 };
 
 export const createRoom = async (name: string) => {
-	return request('/roooms', 'POST', { name });
+	return request('/rooms', 'POST', { name });
 };
 
 export const addUserToRoom = async (roomId: number) => {
