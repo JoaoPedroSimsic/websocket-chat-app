@@ -1,11 +1,12 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+
 import prisma from '../config/prismaClient';
 import isValidPassword from '../utils/isValidPassword';
 import handleError from '../utils/handleError';
 
-class TokenController {
-	public async generateToken(req: Request, res: Response): Promise<void> {
+class LoginController {
+	public async login(req: Request, res: Response): Promise<void> {
 		try {
 			const { email, password } = req.body;
 
@@ -21,7 +22,7 @@ class TokenController {
 				return;
 			}
 
-			if (!await isValidPassword(password, user.password)) {
+			if (!(await isValidPassword(password, user.password))) {
 				res.status(401).json({ errors: ['Invalid password'] });
 				return;
 			}
@@ -31,16 +32,24 @@ class TokenController {
 			}
 
 			const token = jwt.sign(
-				{ userId: user.id, email: user.email },
+				{ userId: user.id },
 				process.env.JWT_SECRET,
 				{ expiresIn: '7d' },
 			);
 
+			res.cookie('authToken', token, {
+				httpOnly: true,
+				// I should set it true in production
+				secure: false,
+				sameSite: 'strict',
+				maxAge: 7 * 24 * 60 * 60 * 1000,
+			});
+
 			res.status(200).json({ token, username: user.username, id: user.id });
 		} catch (err) {
-			handleError(err, res, 'Error generating token');
+			handleError(err, res, 'Error setting up auth Token');
 		}
 	}
 }
 
-export default new TokenController();
+export default new LoginController();

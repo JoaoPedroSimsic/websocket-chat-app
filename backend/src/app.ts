@@ -1,8 +1,9 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 
 import userRoutes from './routes/userRoutes';
-import tokenRoutes from './routes/tokenRoutes';
+import loginRoutes from './routes/loginRoutes';
 import roomRoutes from './routes/roomRoutes';
 
 class App {
@@ -22,11 +23,12 @@ class App {
 			}),
 		);
 		this.app.use(express.json());
+		this.app.use(cookieParser());
 	}
 
 	private routes(): void {
+		this.app.use('/login', loginRoutes);
 		this.app.use('/users', userRoutes);
-		this.app.use('/token', tokenRoutes);
 		this.app.use('/rooms', roomRoutes);
 	}
 }

@@ -9,14 +9,7 @@ const authMiddleware = async (
 	res: Response,
 	next: NextFunction,
 ): Promise<void> => {
-	const authorization = req.headers.authorization;
-
-	if (!authorization) {
-		res.status(401).json({ error: 'Login Required' });
-		return;
-	}
-
-	const token = authorization.split(' ')[1];
+	const token = req.cookies.authToken;
 
 	if (!token) {
 		res.status(401).json({ error: 'Invalid token format' });
@@ -43,7 +36,11 @@ const authMiddleware = async (
 			}
 			handleError(err, res, 'Authentication Error');
 		} else {
-			handleError(new Error('An unknown authentication error occuried'), res, 'Authentication Error')
+			handleError(
+				new Error('An unknown authentication error occuried'),
+				res,
+				'Authentication Error',
+			);
 		}
 	}
 };
