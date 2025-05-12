@@ -3,7 +3,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 
 import userRoutes from './routes/userRoutes';
-import loginRoutes from './routes/loginRoutes';
+import authRoutes from './routes/authRoutes';
 import roomRoutes from './routes/roomRoutes';
 
 class App {
@@ -27,7 +27,7 @@ class App {
 	}
 
 	private routes(): void {
-		this.app.use('/login', loginRoutes);
+		this.app.use('/auth', authRoutes);
 		this.app.use('/users', userRoutes);
 		this.app.use('/rooms', roomRoutes);
 	}

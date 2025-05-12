@@ -5,7 +5,7 @@ import prisma from '../config/prismaClient';
 import isValidPassword from '../utils/isValidPassword';
 import handleError from '../utils/handleError';
 
-class LoginController {
+class AuthController {
 	public async login(req: Request, res: Response): Promise<void> {
 		try {
 			const { email, password } = req.body;
@@ -31,11 +31,9 @@ class LoginController {
 				throw new Error('JWT_SECRET not set');
 			}
 
-			const token = jwt.sign(
-				{ userId: user.id },
-				process.env.JWT_SECRET,
-				{ expiresIn: '7d' },
-			);
+			const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
+				expiresIn: '7d',
+			});
 
 			res.cookie('authToken', token, {
 				httpOnly: true,
@@ -43,6 +41,7 @@ class LoginController {
 				secure: false,
 				sameSite: 'strict',
 				maxAge: 7 * 24 * 60 * 60 * 1000,
+				path: '/',
 			});
 
 			res.status(200).json({ token, username: user.username, id: user.id });
@@ -50,6 +49,18 @@ class LoginController {
 			handleError(err, res, 'Error setting up auth Token');
 		}
 	}
+
+	public logout(_req: Request, res: Response): void {
+		res.cookie('authToken', '', {
+			httpOnly: true,
+			secure: false,
+			sameSite: 'strict',
+			expires: new Date(0),
+			path: '/',
+		});
+
+		res.status(200).json({ message: 'Logout successfully' });
+	}
 }
 
-export default new LoginController();
+export default new AuthController();
