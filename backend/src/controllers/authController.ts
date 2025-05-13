@@ -44,7 +44,7 @@ class AuthController {
 				path: '/',
 			});
 
-			res.status(200).json({ token, username: user.username, id: user.id });
+			res.status(200).json({ username: user.username, id: user.id });
 		} catch (err) {
 			handleError(err, res, 'Error setting up auth Token');
 		}
